@@ -226,8 +226,30 @@ const FilterEditor: React.FC<FilterEditorProps> = ({ filters, onChange }) => {
         </button>
       </div>
 
-      {/* Tabs */}
-      <div className="flex border-b">
+      {/* Mobile: Horizontal Scrolling Tabs */}
+      <div className="lg:hidden border-b">
+        <div className="flex overflow-x-auto scrollbar-hide">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`
+                flex-shrink-0 flex items-center justify-center space-x-2 py-3 px-6 text-sm font-medium transition-colors whitespace-nowrap
+                ${activeTab === tab.id
+                  ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                }
+              `}
+            >
+              <span>{tab.icon}</span>
+              <span>{tab.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Desktop: Regular Tabs */}
+      <div className="hidden lg:flex border-b">
         {tabs.map((tab) => (
           <button
             key={tab.id}
@@ -268,7 +290,46 @@ const FilterEditor: React.FC<FilterEditorProps> = ({ filters, onChange }) => {
               <p className="text-sm text-gray-600">Instagram & film-inspired effects</p>
               <p className="text-xs text-blue-600">💡 Click "Apply" for instant effect, or use sliders for custom intensity</p>
             </div>
-            {presetFilters.map(renderPresetFilter)}
+            
+            {/* Mobile: Horizontal Quick Apply Buttons */}
+            <div className="lg:hidden">
+              <h4 className="text-sm font-medium text-gray-700 mb-3">Quick Apply</h4>
+              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                {presetFilters.map((config) => (
+                  <button
+                    key={`quick-${config.key}`}
+                    onClick={() => applyPreset(config.key)}
+                    className={`
+                      flex-shrink-0 flex flex-col items-center p-3 rounded-lg border-2 transition-all duration-200 w-20
+                      ${isPresetActive(config.key)
+                        ? 'border-purple-500 bg-purple-50 shadow-md'
+                        : 'border-gray-200 bg-white hover:border-purple-300 hover:shadow-sm'
+                      }
+                    `}
+                  >
+                    <span className="text-lg mb-1">{config.emoji}</span>
+                    <span className="text-xs font-medium text-gray-900 text-center leading-tight">
+                      {config.label}
+                    </span>
+                  </button>
+                ))}
+              </div>
+              
+              {/* Fine-tuning for active preset on mobile */}
+              {presetFilters.some(config => isPresetActive(config.key)) && (
+                <div className="mt-4">
+                  <h4 className="text-sm font-medium text-gray-700 mb-3">Fine-tune Active Filter</h4>
+                  {presetFilters
+                    .filter(config => isPresetActive(config.key))
+                    .map(renderPresetFilter)}
+                </div>
+              )}
+            </div>
+
+            {/* Desktop: Full Controls */}
+            <div className="hidden lg:block">
+              {presetFilters.map(renderPresetFilter)}
+            </div>
           </div>
         )}
       </div>
