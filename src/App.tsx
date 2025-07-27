@@ -1,4 +1,5 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import { ProcessedImage, ImageFilters, FormatOptions, defaultFilters, defaultFormatOptions } from './types';
 import ImageUploader from './components/ImageUploader';
 import FilterEditor from './components/FilterEditor';
@@ -43,11 +44,14 @@ function App() {
     });
   }, []);
 
-  const handleApplyGlobalFilters = useCallback(() => {
-    setImages(prev => prev.map(img => ({
-      ...img,
-      filters: { ...globalFilters }
-    })));
+  // Auto-apply global filters to all images when global filters change
+  useEffect(() => {
+    if (images.length > 0) {
+      setImages(prev => prev.map(img => ({
+        ...img,
+        filters: { ...globalFilters }
+      })));
+    }
   }, [globalFilters]);
 
   const clearAllImages = useCallback(() => {
@@ -184,10 +188,8 @@ function App() {
             <BulkProcessor
               images={images}
               formatOptions={formatOptions}
-              globalFilters={globalFilters}
               onUpdateImage={handleUpdateImage}
               onRemoveImage={handleRemoveImage}
-              onApplyGlobalFilters={handleApplyGlobalFilters}
             />
           </main>
         </div>
@@ -202,6 +204,9 @@ function App() {
           </div>
         </div>
       </footer>
+      
+      {/* Vercel Analytics */}
+      <Analytics />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { ImageFilters, FormatOptions } from '../types';
+import { AdvancedFilterProcessor } from './advancedFilters';
 
 export const createFormattedImage = (
   image: HTMLImageElement,
@@ -67,12 +68,30 @@ export const createFormattedImage = (
     y = (canvasHeight - scaledHeight) / 2;
   }
   
-  // Apply filters
-  const filterString = createFilterString(filters);
-  ctx.filter = filterString;
-  
-  // Draw image
+  // Draw image first
   ctx.drawImage(image, x, y, scaledWidth, scaledHeight);
+  
+  // Apply advanced filters using the new filter processor
+  const processor = new AdvancedFilterProcessor(canvas);
+  processor.applyAdvancedFilters(filters);
+  
+  // Apply additional blur effect if needed
+  if (filters.blur > 0) {
+    ctx.filter = `blur(${filters.blur}px)`;
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = canvas.width;
+    tempCanvas.height = canvas.height;
+    const tempCtx = tempCanvas.getContext('2d')!;
+    tempCtx.drawImage(canvas, 0, 0);
+    
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (options.preset.id !== 'original') {
+      ctx.fillStyle = options.backgroundColor;
+      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+    }
+    ctx.drawImage(tempCanvas, 0, 0);
+    ctx.filter = 'none';
+  }
   
   return canvas;
 };
@@ -94,6 +113,18 @@ export const createFilterString = (filters: ImageFilters): string => {
   
   if (filters.contrast !== 100) {
     filterParts.push(`contrast(${filters.contrast}%)`);
+  }
+  
+  if (filters.saturation !== 100) {
+    filterParts.push(`saturate(${filters.saturation}%)`);
+  }
+  
+  if (filters.hue !== 0) {
+    filterParts.push(`hue-rotate(${filters.hue}deg)`);
+  }
+  
+  if (filters.blur > 0) {
+    filterParts.push(`blur(${filters.blur}px)`);
   }
   
   return filterParts.length > 0 ? filterParts.join(' ') : 'none';
