@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ProcessedImage, FormatOptions } from '../types';
 import { createFormattedImage, loadImageFromFile, downloadCanvas } from '../utils/imageProcessor';
 
@@ -17,7 +17,6 @@ const SquareFormatter: React.FC<SquareFormatterProps> = ({
 }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string>('');
-  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     processImage();

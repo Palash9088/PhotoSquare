@@ -60,38 +60,25 @@ const FilterEditor: React.FC<FilterEditorProps> = ({ filters, onChange }) => {
               step={step}
               value={filters[key]}
               onChange={(e) => handleFilterChange(key, Number(e.target.value))}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer 
+                [&::-webkit-slider-thumb]:appearance-none 
+                [&::-webkit-slider-thumb]:h-5 
+                [&::-webkit-slider-thumb]:w-5 
+                [&::-webkit-slider-thumb]:rounded-full 
+                [&::-webkit-slider-thumb]:bg-blue-600 
+                [&::-webkit-slider-thumb]:cursor-pointer 
+                [&::-webkit-slider-thumb]:shadow-sm
+                [&::-webkit-slider-thumb]:hover:bg-blue-700
+                [&::-moz-range-thumb]:h-5 
+                [&::-moz-range-thumb]:w-5 
+                [&::-moz-range-thumb]:rounded-full 
+                [&::-moz-range-thumb]:bg-blue-600 
+                [&::-moz-range-thumb]:cursor-pointer 
+                [&::-moz-range-thumb]:border-none"
             />
           </div>
         ))}
       </div>
-      
-      <style jsx>{`
-        .slider::-webkit-slider-thumb {
-          appearance: none;
-          height: 20px;
-          width: 20px;
-          border-radius: 50%;
-          background: #3b82f6;
-          cursor: pointer;
-          box-shadow: 0 0 2px 0 #555;
-          transition: background .15s ease-in-out;
-        }
-        
-        .slider::-webkit-slider-thumb:hover {
-          background: #2563eb;
-        }
-        
-        .slider::-moz-range-thumb {
-          height: 20px;
-          width: 20px;
-          border-radius: 50%;
-          background: #3b82f6;
-          cursor: pointer;
-          border: none;
-          box-shadow: 0 0 2px 0 #555;
-        }
-      `}</style>
     </div>
   );
 };

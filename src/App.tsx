@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { ProcessedImage, ImageFilters, FormatOptions, defaultFilters, defaultFormatOptions } from './types';
 import ImageUploader from './components/ImageUploader';
 import FilterEditor from './components/FilterEditor';
