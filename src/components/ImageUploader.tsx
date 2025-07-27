@@ -1,4 +1,5 @@
 import React, { useCallback, useState } from 'react';
+import { isHeicFile } from '../utils/imageProcessor';
 
 interface ImageUploaderProps {
   onImagesSelected: (files: File[]) => void;
@@ -27,7 +28,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImagesSelected, disable
     if (disabled) return;
 
     const files = Array.from(e.dataTransfer.files).filter(file => 
-      file.type.startsWith('image/')
+      file.type.startsWith('image/') || isHeicFile(file)
     );
     
     if (files.length > 0) {
@@ -38,7 +39,12 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImagesSelected, disable
   const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
-      onImagesSelected(Array.from(files));
+      const validFiles = Array.from(files).filter(file => 
+        file.type.startsWith('image/') || isHeicFile(file)
+      );
+      if (validFiles.length > 0) {
+        onImagesSelected(validFiles);
+      }
     }
   }, [onImagesSelected]);
 
@@ -72,7 +78,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImagesSelected, disable
             Drag and drop images or click to browse
           </p>
           <p className="text-xs text-gray-400 mt-2">
-            Supports: JPG, PNG, GIF, WebP
+            Supports: JPG, PNG, GIF, WebP, HEIC
           </p>
         </div>
       </div>
@@ -81,7 +87,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImagesSelected, disable
         id="file-input"
         type="file"
         multiple
-        accept="image/*"
+        accept="image/*,.heic,.heif"
         onChange={handleFileInput}
         className="hidden"
         disabled={disabled}

@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
+import JSZip from 'jszip';
 import { ProcessedImage, FormatOptions, FormatPreset, formatPresets, ImageFilters } from '../types';
 import { createFormattedImage, loadImageFromFile, downloadCanvas } from '../utils/imageProcessor';
 
@@ -26,6 +27,8 @@ const MobilePhotoEditor: React.FC<MobilePhotoEditorProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string>('');
   const [showFilters, setShowFilters] = useState(false);
+  const [showDownloadMenu, setShowDownloadMenu] = useState(false);
+  const [isCreatingZip, setIsCreatingZip] = useState(false);
 
   const currentImage = images[currentImageIndex] || null;
 
@@ -120,8 +123,55 @@ const MobilePhotoEditor: React.FC<MobilePhotoEditorProps> = ({
       const formatName = formatOptions.preset.name.toLowerCase().replace(/\s+/g, '_');
       const filename = `${formatName}_${currentImage.original.name.replace(/\.[^/.]+$/, '')}.png`;
       downloadCanvas(currentImage.canvas, filename);
+      setShowDownloadMenu(false);
     }
   }, [currentImage, formatOptions.preset.name]);
+
+  const handleDownloadAll = useCallback(async () => {
+    const processedImages = images.filter(img => img.canvas);
+    
+    if (processedImages.length === 0) {
+      alert('No processed images to download');
+      return;
+    }
+
+    setIsCreatingZip(true);
+    setShowDownloadMenu(false);
+
+    try {
+      const zip = new JSZip();
+      const formatName = formatOptions.preset.name.toLowerCase().replace(/\s+/g, '_');
+
+      // Add each processed image to the zip
+      for (let i = 0; i < processedImages.length; i++) {
+        const image = processedImages[i];
+        if (image.canvas) {
+          const dataUrl = image.canvas.toDataURL('image/png');
+          const base64Data = dataUrl.split(',')[1];
+          const originalName = image.original.name.replace(/\.[^/.]+$/, '');
+          const filename = `${formatName}_${originalName}_${i + 1}.png`;
+          zip.file(filename, base64Data, { base64: true });
+        }
+      }
+
+      // Generate and download the zip file
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(zipBlob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `photosquare_${formatName}_${new Date().toISOString().split('T')[0]}.zip`;
+      link.click();
+      
+      // Clean up
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error creating zip file:', error);
+      alert('Failed to create zip file. Please try again.');
+    } finally {
+      setIsCreatingZip(false);
+    }
+  }, [images, formatOptions.preset.name]);
 
   const handleRemoveImage = useCallback(() => {
     if (currentImage) {
@@ -164,6 +214,21 @@ const MobilePhotoEditor: React.FC<MobilePhotoEditorProps> = ({
       });
     };
   }, [images]);
+
+  // Close download menu when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (showDownloadMenu && !target.closest('.download-menu')) {
+        setShowDownloadMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showDownloadMenu]);
 
   if (!currentImage) {
     return (
@@ -213,15 +278,59 @@ const MobilePhotoEditor: React.FC<MobilePhotoEditorProps> = ({
             </button>
           )}
           
-          <button 
-            onClick={handleDownload}
-            className="bg-black text-white px-6 py-2 rounded-full text-sm font-medium flex items-center space-x-2"
-          >
-            <span>Download</span>
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
-          </button>
+          {/* Download Menu */}
+          <div className="relative download-menu">
+            <button 
+              onClick={() => setShowDownloadMenu(!showDownloadMenu)}
+              disabled={isCreatingZip}
+              className="bg-black text-white px-6 py-2 rounded-full text-sm font-medium flex items-center space-x-2 disabled:opacity-50"
+            >
+              {isCreatingZip ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <span>Creating ZIP...</span>
+                </>
+              ) : (
+                <>
+                  <span>Download</span>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </>
+              )}
+            </button>
+
+            {/* Download Dropdown */}
+            {showDownloadMenu && (
+              <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                <div className="py-1">
+                  <button
+                    onClick={handleDownload}
+                    disabled={!currentImage?.canvas}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    <span>Download Current</span>
+                  </button>
+                  
+                  {images.length > 1 && (
+                    <button
+                      onClick={handleDownloadAll}
+                      disabled={images.filter(img => img.canvas).length === 0}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      <span>Download All ({images.filter(img => img.canvas).length}) as ZIP</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
@@ -390,7 +499,12 @@ const MobilePhotoEditor: React.FC<MobilePhotoEditorProps> = ({
         {/* Image Thumbnails */}
         {images.length > 1 && (
           <div className="px-4 pb-2 flex-shrink-0">
-            <h4 className="text-sm font-medium text-gray-700 mb-3">Switch Image</h4>
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-medium text-gray-700">Switch Image</h4>
+              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                {images.filter(img => img.canvas).length} / {images.length} processed
+              </span>
+            </div>
             <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
               {images.map((image, index) => (
                 <button

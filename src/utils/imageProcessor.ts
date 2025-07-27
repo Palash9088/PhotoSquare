@@ -1,5 +1,7 @@
 import { ImageFilters, FormatOptions } from '../types';
 import { AdvancedFilterProcessor } from './advancedFilters';
+// @ts-ignore - heic2any doesn't have TypeScript types
+import heic2any from 'heic2any';
 
 export const createFormattedImage = (
   image: HTMLImageElement,
@@ -137,11 +139,62 @@ export const downloadCanvas = (canvas: HTMLCanvasElement, filename: string): voi
   link.click();
 };
 
-export const loadImageFromFile = (file: File): Promise<HTMLImageElement> => {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = reject;
-    img.src = URL.createObjectURL(file);
+export const convertHeicToJpeg = async (file: File): Promise<Blob> => {
+  try {
+    const result = await heic2any({
+      blob: file,
+      toType: 'image/jpeg',
+      quality: 0.9
+    });
+    
+    // heic2any can return Blob or Blob[], we need a single Blob
+    return Array.isArray(result) ? result[0] : result;
+  } catch (error) {
+    console.error('Error converting HEIC file:', error);
+    throw new Error('Failed to convert HEIC file. Please try a different format.');
+  }
+};
+
+export const isHeicFile = (file: File): boolean => {
+  const heicMimeTypes = [
+    'image/heic',
+    'image/heif',
+    'image/heic-sequence',
+    'image/heif-sequence'
+  ];
+  
+  const heicExtensions = ['.heic', '.heif', '.hif'];
+  const fileName = file.name.toLowerCase();
+  
+  return heicMimeTypes.includes(file.type) || 
+         heicExtensions.some(ext => fileName.endsWith(ext));
+};
+
+export const loadImageFromFile = async (file: File): Promise<HTMLImageElement> => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      let imageFile: File | Blob = file;
+      
+      // Convert HEIC files to JPEG
+      if (isHeicFile(file)) {
+        console.log('Converting HEIC file to JPEG...');
+        imageFile = await convertHeicToJpeg(file);
+      }
+      
+      const img = new Image();
+      img.onload = () => {
+        // Clean up the object URL
+        URL.revokeObjectURL(img.src);
+        resolve(img);
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(img.src);
+        reject(new Error('Failed to load image'));
+      };
+      
+      img.src = URL.createObjectURL(imageFile);
+    } catch (error) {
+      reject(error);
+    }
   });
 }; 
