@@ -132,6 +132,18 @@ export const createFilterString = (filters: ImageFilters): string => {
   return filterParts.length > 0 ? filterParts.join(' ') : 'none';
 };
 
+export const generateFileName = (originalName?: string, format?: string): string => {
+  const now = new Date();
+  const datetime = now.toISOString().replace(/[:.]/g, '-').slice(0, -5); // Remove milliseconds and replace colons/dots
+  
+  if (originalName && format) {
+    const baseName = originalName.replace(/\.[^/.]+$/, ''); // Remove extension
+    return `PhotoSquare_${format}_${baseName}_${datetime}.png`;
+  }
+  
+  return `PhotoSquare_${datetime}.png`;
+};
+
 export const downloadCanvas = (canvas: HTMLCanvasElement, filename: string): void => {
   const link = document.createElement('a');
   link.download = filename;

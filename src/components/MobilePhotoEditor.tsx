@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import JSZip from 'jszip';
 import { ProcessedImage, FormatOptions, FormatPreset, formatPresets, ImageFilters } from '../types';
-import { createFormattedImage, loadImageFromFile, downloadCanvas } from '../utils/imageProcessor';
+import { createFormattedImage, loadImageFromFile, downloadCanvas, generateFileName } from '../utils/imageProcessor';
 
 interface MobilePhotoEditorProps {
   images: ProcessedImage[];
@@ -121,7 +121,7 @@ const MobilePhotoEditor: React.FC<MobilePhotoEditorProps> = ({
   const handleDownload = useCallback(() => {
     if (currentImage?.canvas) {
       const formatName = formatOptions.preset.name.toLowerCase().replace(/\s+/g, '_');
-      const filename = `${formatName}_${currentImage.original.name.replace(/\.[^/.]+$/, '')}.png`;
+      const filename = generateFileName(currentImage.original.name, formatName);
       downloadCanvas(currentImage.canvas, filename);
       setShowDownloadMenu(false);
     }
@@ -148,8 +148,7 @@ const MobilePhotoEditor: React.FC<MobilePhotoEditorProps> = ({
         if (image.canvas) {
           const dataUrl = image.canvas.toDataURL('image/png');
           const base64Data = dataUrl.split(',')[1];
-          const originalName = image.original.name.replace(/\.[^/.]+$/, '');
-          const filename = `${formatName}_${originalName}_${i + 1}.png`;
+          const filename = generateFileName(image.original.name, formatName);
           zip.file(filename, base64Data, { base64: true });
         }
       }
@@ -158,9 +157,12 @@ const MobilePhotoEditor: React.FC<MobilePhotoEditorProps> = ({
       const zipBlob = await zip.generateAsync({ type: 'blob' });
       const url = URL.createObjectURL(zipBlob);
       
+      const now = new Date();
+      const datetime = now.toISOString().replace(/[:.]/g, '-').slice(0, -5);
+      
       const link = document.createElement('a');
       link.href = url;
-      link.download = `photosquare_${formatName}_${new Date().toISOString().split('T')[0]}.zip`;
+      link.download = `PhotoSquare_${formatName}_${datetime}.zip`;
       link.click();
       
       // Clean up

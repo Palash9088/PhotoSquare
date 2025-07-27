@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import JSZip from 'jszip';
 import { ProcessedImage } from '../types';
+import { generateFileName } from '../utils/imageProcessor';
 
 interface DownloadAllButtonProps {
   images: ProcessedImage[];
@@ -25,7 +26,7 @@ const DownloadAllButton: React.FC<DownloadAllButtonProps> = ({ images, disabled 
         if (image.canvas) {
           const dataUrl = image.canvas.toDataURL('image/png');
           const base64Data = dataUrl.split(',')[1];
-          const filename = `square_${image.original.name.replace(/\.[^/.]+$/, '')}.png`;
+          const filename = generateFileName(image.original.name, 'square');
           zip.file(filename, base64Data, { base64: true });
         }
       }
@@ -34,9 +35,12 @@ const DownloadAllButton: React.FC<DownloadAllButtonProps> = ({ images, disabled 
       const zipBlob = await zip.generateAsync({ type: 'blob' });
       const url = URL.createObjectURL(zipBlob);
       
+      const now = new Date();
+      const datetime = now.toISOString().replace(/[:.]/g, '-').slice(0, -5);
+      
       const link = document.createElement('a');
       link.href = url;
-      link.download = `photosquare_images_${new Date().toISOString().split('T')[0]}.zip`;
+      link.download = `PhotoSquare_images_${datetime}.zip`;
       link.click();
       
       // Clean up

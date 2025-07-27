@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { ProcessedImage, FormatOptions } from '../types';
-import { createFormattedImage, loadImageFromFile, downloadCanvas } from '../utils/imageProcessor';
+import { createFormattedImage, loadImageFromFile, downloadCanvas, generateFileName } from '../utils/imageProcessor';
 
 interface SquareFormatterProps {
   processedImage: ProcessedImage;
@@ -51,7 +51,7 @@ const SquareFormatter: React.FC<SquareFormatterProps> = ({
   const handleDownload = () => {
     if (processedImage.canvas) {
       const formatName = formatOptions.preset.name.toLowerCase().replace(/\s+/g, '_');
-      const filename = `${formatName}_${processedImage.original.name.replace(/\.[^/.]+$/, '')}.png`;
+      const filename = generateFileName(processedImage.original.name, formatName);
       downloadCanvas(processedImage.canvas, filename);
     }
   };
