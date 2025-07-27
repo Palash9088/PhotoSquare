@@ -7,6 +7,7 @@ import BulkProcessor from './components/BulkProcessor';
 import DownloadAllButton from './components/DownloadAllButton';
 import BackgroundColorPicker from './components/BackgroundColorPicker';
 import FormatPresetSelector from './components/FormatPresetSelector';
+import MobilePhotoEditor from './components/MobilePhotoEditor';
 
 function App() {
   const [images, setImages] = useState<ProcessedImage[]>([]);
@@ -38,7 +39,13 @@ function App() {
     setImages(prev => {
       const image = prev.find(img => img.id === id);
       if (image) {
-        URL.revokeObjectURL(image.originalUrl);
+        // Cleanup blob URLs
+        if (image.originalUrl && image.originalUrl.startsWith('blob:')) {
+          URL.revokeObjectURL(image.originalUrl);
+        }
+        if (image.processed && image.processed.startsWith('blob:')) {
+          URL.revokeObjectURL(image.processed);
+        }
       }
       return prev.filter(img => img.id !== id);
     });
@@ -56,7 +63,13 @@ function App() {
 
   const clearAllImages = useCallback(() => {
     images.forEach(image => {
-      URL.revokeObjectURL(image.originalUrl);
+      // Cleanup blob URLs
+      if (image.originalUrl && image.originalUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(image.originalUrl);
+      }
+      if (image.processed && image.processed.startsWith('blob:')) {
+        URL.revokeObjectURL(image.processed);
+      }
     });
     setImages([]);
   }, [images]);
@@ -93,9 +106,51 @@ function App() {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="lg:flex lg:gap-8">
+        {/* Mobile Layout - New Clean Interface */}
+        <div className="lg:hidden">
+          {images.length > 0 ? (
+            <MobilePhotoEditor
+              images={images}
+              formatOptions={formatOptions}
+              filters={globalFilters}
+              onFormatChange={(preset) => setFormatOptions(prev => ({ 
+                ...prev, 
+                preset,
+                aspectRatio: preset.aspectRatio 
+              }))}
+              onFilterChange={setGlobalFilters}
+              onUpdateImage={handleUpdateImage}
+              onRemoveImage={handleRemoveImage}
+            />
+          ) : (
+            <div className="space-y-6">
+              {/* Upload Section */}
+              <div className="bg-white rounded-lg shadow-sm border p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Upload Images</h2>
+                <ImageUploader 
+                  onImagesSelected={handleImagesSelected} 
+                  disabled={isProcessing}
+                />
+              </div>
+
+              {/* Empty state */}
+              <div className="text-center py-12">
+                <div className="w-16 h-16 mx-auto text-gray-300 mb-4">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No images uploaded</h3>
+                <p className="text-gray-500">Upload some images above to get started</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Desktop Layout - Sidebar + Main Content */}
+        <div className="hidden lg:flex lg:gap-8">
           {/* Sticky Sidebar - Desktop */}
-          <aside className="hidden lg:block lg:w-80 lg:flex-shrink-0">
+          <aside className="lg:w-80 lg:flex-shrink-0">
             <div className="sticky top-24 h-[calc(100vh-8rem)] overflow-y-auto">
               <div className="space-y-6 pb-8">
                 {/* Upload Section */}
@@ -140,57 +195,26 @@ function App() {
             </div>
           </aside>
 
-          {/* Main Processing Area */}
+          {/* Main Content Area - Desktop */}
           <main className="lg:flex-1 lg:min-w-0">
-            {/* Mobile Sidebar - Show on smaller screens */}
-            <div className="lg:hidden mb-8 space-y-6">
-              {/* Upload Section */}
-              <div className="bg-white rounded-lg shadow-sm border p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Upload Images</h2>
-                <ImageUploader 
-                  onImagesSelected={handleImagesSelected} 
-                  disabled={isProcessing}
-                />
-              </div>
-
-              {/* Format Presets */}
-              <FormatPresetSelector
-                selectedPreset={formatOptions.preset}
-                onChange={(preset) => setFormatOptions(prev => ({ 
-                  ...prev, 
-                  preset,
-                  aspectRatio: preset.aspectRatio 
-                }))}
-              />
-
-              {/* Background Color Picker - Only show for non-original formats */}
-              {formatOptions.preset.id !== 'original' && (
-                <BackgroundColorPicker
-                  backgroundColor={formatOptions.backgroundColor}
-                  onChange={(color) => setFormatOptions(prev => ({ ...prev, backgroundColor: color }))}
-                />
-              )}
-
-              {/* Global Filters */}
-              <FilterEditor
-                filters={globalFilters}
-                onChange={setGlobalFilters}
-              />
-
-              {/* Download Section */}
-              <DownloadAllButton
+            {images.length > 0 ? (
+              <BulkProcessor
                 images={images}
-                disabled={isProcessing}
+                formatOptions={formatOptions}
+                onUpdateImage={handleUpdateImage}
+                onRemoveImage={handleRemoveImage}
               />
-            </div>
-
-            {/* Image Processing Area */}
-            <BulkProcessor
-              images={images}
-              formatOptions={formatOptions}
-              onUpdateImage={handleUpdateImage}
-              onRemoveImage={handleRemoveImage}
-            />
+            ) : (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 mx-auto text-gray-300 mb-4">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No images uploaded</h3>
+                <p className="text-gray-500">Upload some images using the sidebar to get started</p>
+              </div>
+            )}
           </main>
         </div>
       </div>
