@@ -8,10 +8,31 @@ export interface ProcessedImage {
 }
 
 export interface ImageFilters {
+  // Basic filters
   grayscale: number;
   sepia: number;
   brightness: number;
   contrast: number;
+  
+  // Advanced filters
+  saturation: number;
+  hue: number;
+  blur: number;
+  sharpen: number;
+  vignette: number;
+  temperature: number;
+  
+  // Preset filters (0-100 intensity)
+  vintage: number;
+  drama: number;
+  clarify: number;
+  hdr: number;
+  lomo: number;
+  cross: number;
+  pinhole: number;
+  kodachrome: number;
+  technicolor: number;
+  polaroid: number;
 }
 
 export interface FormatOptions {
@@ -135,10 +156,31 @@ export const formatPresets: FormatPreset[] = [
 ];
 
 export const defaultFilters: ImageFilters = {
+  // Basic filters
   grayscale: 0,
   sepia: 0,
   brightness: 100,
   contrast: 100,
+  
+  // Advanced filters
+  saturation: 100,
+  hue: 0,
+  blur: 0,
+  sharpen: 0,
+  vignette: 0,
+  temperature: 0,
+  
+  // Preset filters
+  vintage: 0,
+  drama: 0,
+  clarify: 0,
+  hdr: 0,
+  lomo: 0,
+  cross: 0,
+  pinhole: 0,
+  kodachrome: 0,
+  technicolor: 0,
+  polaroid: 0,
 };
 
 export const defaultFormatOptions: FormatOptions = {

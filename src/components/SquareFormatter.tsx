@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { ProcessedImage, FormatOptions } from '../types';
 import { createFormattedImage, loadImageFromFile, downloadCanvas } from '../utils/imageProcessor';
 
@@ -18,9 +18,13 @@ const SquareFormatter: React.FC<SquareFormatterProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string>('');
 
+  // Create serialized versions for proper dependency tracking
+  const filtersKey = useMemo(() => JSON.stringify(processedImage.filters), [processedImage.filters]);
+  const formatKey = useMemo(() => JSON.stringify(formatOptions), [formatOptions]);
+
   useEffect(() => {
     processImage();
-  }, [processedImage.filters, formatOptions]);
+  }, [filtersKey, formatKey]); // Use serialized keys for reliable dependency tracking
 
   const processImage = async () => {
     setIsProcessing(true);
@@ -63,10 +67,10 @@ const SquareFormatter: React.FC<SquareFormatterProps> = ({
   const getAspectRatioDisplay = () => {
     const { preset } = formatOptions;
     if (preset.id === 'original') return 'Original';
-    if (preset.width && preset.height) {
-      return `${preset.width}×${preset.height}`;
-    }
-    return `${preset.aspectRatio.toFixed(2)}:1`;
+    
+    return preset.width && preset.height 
+      ? `${preset.width}×${preset.height}`
+      : `${Math.round(preset.aspectRatio * 100)/100}:1`;
   };
 
   return (
